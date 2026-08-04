@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# Ensure node/npm are in PATH for GitHub Desktop
+export PATH="$PATH:/c/Program Files/nodejs"
+
+npx lint-staged
