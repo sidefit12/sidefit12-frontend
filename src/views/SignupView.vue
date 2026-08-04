@@ -177,7 +177,7 @@ async function handleSignUp() {
 }
 
 function goToOnboarding() {
-  router.push('/')
+  router.push('/onboarding')
 }
 </script>
 
