@@ -9,6 +9,7 @@ import { ref, computed } from 'vue'
 import {
   login as loginApi,
   logout as logoutApi,
+  fetchCurrentUser,
   type LoginRequest,
   type UserSummary,
 } from '@/api/auth'
@@ -52,6 +53,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * 앱 시작 시 토큰이 있으면 유저 정보 복원
+   */
+  async function initUser() {
+    if (!accessToken.value) return
+    try {
+      const res = await fetchCurrentUser()
+      user.value = res.data.user
+    } catch {
+      // 토큰 만료 등 실패 시 로그아웃 처리
+      accessToken.value = null
+      refreshTokenValue.value = null
+      user.value = null
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+    }
+  }
+
   return {
     accessToken,
     refreshTokenValue,
@@ -59,5 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
     isLoggedIn,
     login,
     logout,
+    initUser,
   }
 })
