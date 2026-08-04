@@ -1,11 +1,13 @@
-name: 백엔드 테스트 및 코드 품질 검사
+name: 프론트엔드 빌드 및 코드 품질 검사
 
 on:
   pull_request:
     branches:
+      - main
       - develop
   push:
     branches:
+      - main
       - develop
   workflow_dispatch:
 
@@ -14,53 +16,55 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  backend-test:
-    name: 백엔드 검사 및 테스트 실행
+  lint-typecheck-build:
+    name: Lint · TypeCheck · Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: 저장소 코드 가져오기
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
-      - name: Python 3.13 설정
-        uses: actions/setup-python@v6
+      - name: Node.js 22 설정
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: requirements.txt
+          node-version: "22"
+          cache: npm
 
-      - name: 테스트 환경 변수 파일 생성
-        env:
-          BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
-        run: |
-          if [ -z "$BACKEND_ENV_FILE" ]; then
-            echo "BACKEND_ENV_FILE GitHub Actions Secret이 설정되지 않았습니다."
-            exit 1
-          fi
-          umask 077
-          printf '%s' "$BACKEND_ENV_FILE" > .env
+      - name: 의존성 설치
+        run: npm ci
 
-      - name: Python 의존성 설치
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+      - name: ESLint 정적 검사
+        run: npm run lint
 
-      - name: 의존성 무결성 검사
-        run: python -m pip check
+      - name: TypeScript 타입 검사
+        run: npx vue-tsc -b --noEmit
 
-      - name: Ruff 정적 검사
-        run: python -m ruff check app tests
+      - name: Vite 프로덕션 빌드
+        run: npm run build
 
-      - name: Ruff 코드 포맷 검사
-        run: python -m ruff format --check app tests
+  test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint-typecheck-build
 
-      - name: Python 코드 컴파일 검사
-        run: python -m compileall -q app tests
+    steps:
+      - name: 저장소 코드 가져오기
+        uses: actions/checkout@v4
 
-      - name: 인증 API 테스트 실행
-        run: python -m pytest -q
+      - name: Node.js 22 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 단위 테스트 실행
+        run: npm run test:run
