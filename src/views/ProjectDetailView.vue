@@ -54,8 +54,20 @@ function formatDate(dateStr: string): string {
 async function copyShareUrl() {
   if (detail.value?.shareUrl) {
     await navigator.clipboard.writeText(detail.value.shareUrl)
-    alert('공유 링크가 복사되었습니다.')
+    showToast('공유 링크가 복사되었습니다')
   }
+}
+
+/** 토스트 */
+const toastMessage = ref('')
+const toastVisible = ref(false)
+
+function showToast(msg: string) {
+  toastMessage.value = msg
+  toastVisible.value = true
+  setTimeout(() => {
+    toastVisible.value = false
+  }, 2000)
 }
 
 /** 북마크 토글 */
@@ -66,9 +78,11 @@ async function toggleBookmark() {
     if (bookmarked.value) {
       await removeBookmark(projectId.value)
       bookmarked.value = false
+      showToast('관심 목록에서 제거했습니다')
     } else {
       await addBookmark(projectId.value)
       bookmarked.value = true
+      showToast('관심 목록에 저장했습니다')
     }
   } catch {
     // 실패 시 무시
@@ -80,6 +94,15 @@ async function toggleBookmark() {
 
 <template>
   <div class="mx-auto max-w-[1440px] px-12 pb-16 pt-8">
+    <!-- 토스트 -->
+    <transition name="dropdown">
+      <div
+        v-if="toastVisible"
+        class="fixed left-1/2 top-[100px] z-[200] -translate-x-1/2 rounded-full bg-text px-6 py-3 text-sm font-bold text-white shadow-lg"
+      >
+        {{ toastMessage }}
+      </div>
+    </transition>
     <!-- 로딩: 스켈레톤 -->
     <div v-if="loading" class="flex gap-8">
       <div class="flex-1 min-w-0">
@@ -220,7 +243,15 @@ async function toggleBookmark() {
         <!-- 우측: 모집 요약 사이드바 (뱃지 높이부터) -->
         <aside class="hero-animate hero-animate-delay-2 hidden w-[430px] shrink-0 lg:block">
           <div class="sticky top-[100px] rounded-xl bg-bg-card p-7">
-            <h3 class="text-base font-bold text-text">모집 요약</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-text">모집 요약</h3>
+              <p
+                class="cursor-pointer text-sm font-bold text-text transition-all duration-200 hover:opacity-70 active:scale-95"
+                @click="copyShareUrl"
+              >
+                공유 링크 복사
+              </p>
+            </div>
 
             <!-- 마감일 -->
             <div class="mt-5">
@@ -244,12 +275,37 @@ async function toggleBookmark() {
 
             <!-- 액션 버튼 -->
             <div class="mt-7 space-y-3">
+              <!-- 신규 지원 가능 (myApplication 없거나 CANCELED) -->
               <router-link
+                v-if="
+                  !detail.myApplication || detail.myApplication.applicationStatus === 'CANCELED'
+                "
                 :to="`/projects/${projectId}/apply`"
                 class="flex h-[46px] w-full items-center justify-center rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105"
               >
                 프로젝트 지원
               </router-link>
+              <!-- PENDING: 지원 검토 중 -->
+              <div
+                v-else-if="detail.myApplication.applicationStatus === 'PENDING'"
+                class="flex h-[46px] w-full items-center justify-center rounded-full bg-primary-dark text-sm font-bold text-text"
+              >
+                지원 검토 중입니다
+              </div>
+              <!-- ACCEPTED: 참여 중 -->
+              <div
+                v-else-if="detail.myApplication.applicationStatus === 'ACCEPTED'"
+                class="flex h-[46px] w-full items-center justify-center rounded-full bg-bg-muted text-sm font-bold text-text-secondary"
+              >
+                이미 참여한 프로젝트입니다
+              </div>
+              <!-- REJECTED: 거절됨 -->
+              <div
+                v-else-if="detail.myApplication.applicationStatus === 'REJECTED'"
+                class="flex h-[46px] w-full items-center justify-center rounded-full bg-bg-muted text-sm font-bold text-text-secondary"
+              >
+                지원이 거절되었습니다
+              </div>
               <button
                 class="flex h-[46px] w-full items-center justify-center rounded-full border border-text bg-white text-sm font-bold text-text transition-transform hover:scale-105 active:scale-95"
                 :disabled="bookmarkLoading"
@@ -258,14 +314,6 @@ async function toggleBookmark() {
                 {{ bookmarked ? '관심 목록에서 제거' : '관심 목록에 저장' }}
               </button>
             </div>
-
-            <!-- 공유 링크 복사 -->
-            <p
-              class="mt-5 cursor-pointer text-center text-sm font-bold text-text transition-all duration-200 hover:scale-105 hover:opacity-70 active:scale-95"
-              @click="copyShareUrl"
-            >
-              공유 링크 복사
-            </p>
 
             <!-- 게시글 신고 -->
             <button

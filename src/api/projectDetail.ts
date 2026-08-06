@@ -22,6 +22,7 @@ export interface ProjectDetailData {
   shareUrl: string
   ownerProfile: { userId: number; nickname: string }
   memberSummary: MemberSummary
+  myApplication: { applicationStatus: string } | null
 }
 
 export interface ProjectDetailResponse {

@@ -165,11 +165,13 @@ async function handleSubmit() {
             <span
               v-for="topic in detail.project.topics"
               :key="topic.topicId"
-              class="flex h-[34px] items-center rounded-full bg-white px-3 text-xs text-text"
+              class="flex h-[34px] items-center rounded-full border border-border bg-white px-3 text-xs text-text"
             >
               {{ topic.topicName }}
             </span>
-            <span class="flex h-[34px] items-center rounded-full bg-white px-3 text-xs text-text">
+            <span
+              class="flex h-[34px] items-center rounded-full border border-border bg-white px-3 text-xs text-text"
+            >
               {{ workTypeLabel(detail.project.workType) }}
             </span>
           </div>

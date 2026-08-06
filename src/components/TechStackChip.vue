@@ -34,7 +34,12 @@ const textClasses = computed(() =>
 
 <template>
   <span :class="chipClasses">
-    <img v-if="logoUrl" :src="logoUrl" :alt="name" class="size-5 shrink-0 object-contain" />
+    <img
+      v-if="logoUrl"
+      :src="logoUrl"
+      :alt="name"
+      :class="['size-5 shrink-0 object-contain', theme === 'dark' ? 'invert' : '']"
+    />
     <span
       v-else
       class="flex size-5 shrink-0 items-center justify-center rounded-sm bg-border text-[9px] font-bold text-text-secondary"
