@@ -110,6 +110,30 @@ function setStatusFilter(status?: string) {
   loadData(status, positionFilter.value, 0)
 }
 
+function selectPositionAll() {
+  positionFilter.value = undefined
+  positionDropdownOpen.value = false
+  loadData(statusFilter.value)
+}
+
+function selectPosition(posId: number) {
+  positionFilter.value = String(posId)
+  positionDropdownOpen.value = false
+  loadData(statusFilter.value, String(posId))
+}
+
+function selectStatusAll() {
+  statusSelectFilter.value = undefined
+  statusDropdownOpen.value = false
+  setStatusFilter(undefined)
+}
+
+function selectStatus(value: string) {
+  statusSelectFilter.value = value
+  statusDropdownOpen.value = false
+  setStatusFilter(value)
+}
+
 function goToPage(page: number) {
   loadData(statusFilter.value, positionFilter.value, page)
 }
@@ -206,11 +230,7 @@ const statCards = computed(() => [
           >
             <button
               class="block w-full px-4 py-2 text-left text-xs text-text hover:bg-bg-muted"
-              @click="
-                positionFilter = undefined
-                positionDropdownOpen = false
-                loadData(statusFilter)
-              "
+              @click="selectPositionAll"
             >
               역할 전체
             </button>
@@ -218,11 +238,7 @@ const statCards = computed(() => [
               v-for="pos in positions"
               :key="pos.projectPositionId"
               class="block w-full px-4 py-2 text-left text-xs text-text hover:bg-bg-muted"
-              @click="
-                positionFilter = String(pos.projectPositionId)
-                positionDropdownOpen = false
-                loadData(statusFilter, String(pos.projectPositionId))
-              "
+              @click="selectPosition(pos.projectPositionId)"
             >
               {{ pos.positionTitle }}
             </button>
@@ -251,11 +267,7 @@ const statCards = computed(() => [
           >
             <button
               class="block w-full px-4 py-2 text-left text-xs text-text hover:bg-bg-muted"
-              @click="
-                statusSelectFilter = undefined
-                statusDropdownOpen = false
-                setStatusFilter(undefined)
-              "
+              @click="selectStatusAll"
             >
               상태 전체
             </button>
@@ -263,11 +275,7 @@ const statCards = computed(() => [
               v-for="s in statusOptions"
               :key="s.value"
               class="block w-full px-4 py-2 text-left text-xs text-text hover:bg-bg-muted"
-              @click="
-                statusSelectFilter = s.value
-                statusDropdownOpen = false
-                setStatusFilter(s.value)
-              "
+              @click="selectStatus(s.value)"
             >
               {{ s.label }}
             </button>
