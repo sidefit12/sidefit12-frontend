@@ -34,6 +34,21 @@ const routes: RouteRecordRaw[] = [
     name: 'Onboarding',
     component: () => import('@/views/OnboardingView.vue'),
   },
+  {
+    path: '/projects',
+    name: 'Projects',
+    component: () => import('@/views/ProjectsView.vue'),
+  },
+  {
+    path: '/projects/:id',
+    name: 'ProjectDetail',
+    component: () => import('@/views/ProjectDetailView.vue'),
+  },
+  {
+    path: '/projects/:id/apply',
+    name: 'ProjectApply',
+    component: () => import('@/views/ProjectApplyView.vue'),
+  },
 ]
 
 /**
