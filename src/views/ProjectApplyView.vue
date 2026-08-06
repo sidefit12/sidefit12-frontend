@@ -17,9 +17,10 @@ const authStore = useAuthStore()
 
 const projectId = computed(() => Number(route.params.id))
 
-// 지원 완료 후 뒤로가기 방지 → 상세 페이지로 이동
-onBeforeRouteLeave((_to, _from, next) => {
-  if (applied.value) {
+// 지원 완료 후 뒤로가기(브라우저 백) 방지 → 상세 페이지로 이동
+// 명시적 라우터 이동은 허용
+onBeforeRouteLeave((to, _from, next) => {
+  if (applied.value && to.path === `/projects/${projectId.value}/apply`) {
     next(`/projects/${projectId.value}`)
   } else {
     next()
@@ -141,7 +142,7 @@ async function handleSubmit() {
         </p>
         <button
           class="hero-animate hero-animate-delay-3 mt-8 flex h-[46px] items-center justify-center rounded-full bg-text px-8 text-sm font-bold text-white transition-transform hover:scale-105"
-          @click="router.push('/activity')"
+          @click="router.push('/mypage/applications')"
         >
           지원 내역 확인
         </button>

@@ -7,6 +7,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchProjectDetail, type ProjectDetailData } from '@/api/projectDetail'
+import { addBookmark, removeBookmark } from '@/api/bookmark'
 import TechStackChip from '@/components/TechStackChip.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import { type TechStackName } from '@/constants/techStacks'
@@ -16,6 +17,8 @@ const route = useRoute()
 const loading = ref(true)
 const error = ref('')
 const detail = ref<ProjectDetailData | null>(null)
+const bookmarked = ref(false)
+const bookmarkLoading = ref(false)
 
 const projectId = computed(() => Number(route.params.id))
 
@@ -23,6 +26,7 @@ onMounted(async () => {
   try {
     const res = await fetchProjectDetail(projectId.value)
     detail.value = res.data
+    bookmarked.value = res.data.project.isBookmarked ?? false
   } catch {
     error.value = '프로젝트를 불러오지 못했어요.'
   } finally {
@@ -51,6 +55,25 @@ async function copyShareUrl() {
   if (detail.value?.shareUrl) {
     await navigator.clipboard.writeText(detail.value.shareUrl)
     alert('공유 링크가 복사되었습니다.')
+  }
+}
+
+/** 북마크 토글 */
+async function toggleBookmark() {
+  if (bookmarkLoading.value) return
+  bookmarkLoading.value = true
+  try {
+    if (bookmarked.value) {
+      await removeBookmark(projectId.value)
+      bookmarked.value = false
+    } else {
+      await addBookmark(projectId.value)
+      bookmarked.value = true
+    }
+  } catch {
+    // 실패 시 무시
+  } finally {
+    bookmarkLoading.value = false
   }
 }
 </script>
@@ -228,9 +251,11 @@ async function copyShareUrl() {
                 프로젝트 지원
               </router-link>
               <button
-                class="flex h-[46px] w-full items-center justify-center rounded-full border border-text bg-white text-sm font-bold text-text transition-transform hover:scale-105"
+                class="flex h-[46px] w-full items-center justify-center rounded-full border border-text bg-white text-sm font-bold text-text transition-transform hover:scale-105 active:scale-95"
+                :disabled="bookmarkLoading"
+                @click="toggleBookmark"
               >
-                관심 목록에 저장
+                {{ bookmarked ? '관심 목록에서 제거' : '관심 목록에 저장' }}
               </button>
             </div>
 

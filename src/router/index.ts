@@ -49,6 +49,36 @@ const routes: RouteRecordRaw[] = [
     name: 'ProjectApply',
     component: () => import('@/views/ProjectApplyView.vue'),
   },
+  {
+    path: '/projects/:id/applicants',
+    name: 'ApplicantManage',
+    component: () => import('@/views/ApplicantManageView.vue'),
+  },
+  {
+    path: '/mypage',
+    name: 'MyPage',
+    component: () => import('@/views/MyPageView.vue'),
+  },
+  {
+    path: '/mypage/applications',
+    name: 'MyApplications',
+    component: () => import('@/views/MyApplicationsView.vue'),
+  },
+  {
+    path: '/mypage/projects',
+    name: 'MyProjects',
+    component: () => import('@/views/MyProjectsView.vue'),
+  },
+  {
+    path: '/mypage/bookmarks',
+    name: 'MyBookmarks',
+    component: () => import('@/views/MyBookmarksView.vue'),
+  },
+  {
+    path: '/profile/edit',
+    name: 'ProfileEdit',
+    component: () => import('@/views/ProfileEditView.vue'),
+  },
 ]
 
 /**
