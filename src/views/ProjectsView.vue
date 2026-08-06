@@ -123,6 +123,15 @@ function handleSortChange(newSort: 'LATEST' | 'DEADLINE' | 'RECOMMENDED') {
   }
 }
 
+function clearFilters() {
+  keyword.value = ''
+  selectedTopics.value = []
+  selectedRoles.value = []
+  selectedWorkType.value = undefined
+  sort.value = 'LATEST'
+  loadProjects()
+}
+
 function toggleWorkType(type: string) {
   selectedWorkType.value = selectedWorkType.value === type ? undefined : type
 }
