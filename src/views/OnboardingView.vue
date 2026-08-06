@@ -6,6 +6,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/useAuthStore'
 import {
   fetchOnboardingOptions,
   saveOnboarding,
@@ -20,6 +21,7 @@ import TechStackChip from '@/components/TechStackChip.vue'
 import { type TechStackName } from '@/constants/techStacks'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 /* ────── 상태 ────── */
 const step = ref<1 | 2 | 3 | 4>(1)
@@ -169,6 +171,7 @@ async function handleSubmit() {
       techStacks: selectedTechStacks.value,
       roles: selectedRoles.value,
     })
+    await authStore.initUser()
     step.value = 4
   } catch {
     error.value = '저장에 실패했어요. 다시 시도해 주세요.'

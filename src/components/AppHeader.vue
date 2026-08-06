@@ -39,20 +39,23 @@ async function handleLogout() {
       <nav class="ml-[94px] flex items-center gap-[26px]">
         <router-link
           to="/projects"
-          class="whitespace-nowrap text-sm font-bold text-text hover:text-text"
+          class="whitespace-nowrap text-sm text-text-secondary hover:text-text"
+          active-class="!font-bold !text-text"
         >
           프로젝트 찾기
         </router-link>
         <router-link
           to="/recommend"
           class="whitespace-nowrap text-sm text-text-secondary hover:text-text"
+          active-class="!font-bold !text-text"
         >
           AI 추천
         </router-link>
         <router-link
           v-if="authStore.isLoggedIn"
-          to="/activity"
+          to="/mypage"
           class="whitespace-nowrap text-sm text-text-secondary hover:text-text"
+          active-class="!font-bold !text-text"
         >
           내 활동
         </router-link>
