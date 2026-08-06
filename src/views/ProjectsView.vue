@@ -208,13 +208,7 @@ function positionSummary(project: ProjectCardType): string {
           </p>
           <button
             class="hero-animate hero-animate-delay-3 mt-8 flex h-[46px] items-center justify-center rounded-full bg-text px-8 text-sm font-bold text-white transition-transform hover:scale-105"
-            @click="
-              keyword = ''
-              selectedTopics = []
-              selectedRoles = []
-              selectedWorkType = undefined
-              loadProjects()
-            "
+            @click="clearFilters"
           >
             필터 초기화
           </button>
@@ -415,13 +409,7 @@ function positionSummary(project: ProjectCardType): string {
           </p>
           <button
             class="hero-animate hero-animate-delay-3 mt-8 flex h-[46px] items-center justify-center rounded-full bg-text px-8 text-sm font-bold text-white transition-transform hover:scale-105"
-            @click="
-              keyword = ''
-              selectedTopics = []
-              selectedRoles = []
-              selectedWorkType = undefined
-              loadProjects()
-            "
+            @click="clearFilters"
           >
             필터 초기화
           </button>
