@@ -3,3 +3,6 @@ node_modules
 coverage
 pnpm-lock.yaml
 package-lock.json
+
+# 복잡한 타입 캐스팅 템플릿 표현식으로 prettier 파싱 실패
+src/views/ApplicantDetailView.vue
