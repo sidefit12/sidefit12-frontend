@@ -5,20 +5,30 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchProjectDetail, type ProjectDetailData } from '@/api/projectDetail'
 import { addBookmark, removeBookmark } from '@/api/bookmark'
+import { useAuthStore } from '@/stores/useAuthStore'
 import TechStackChip from '@/components/TechStackChip.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import { type TechStackName } from '@/constants/techStacks'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 
 const loading = ref(true)
 const error = ref('')
 const detail = ref<ProjectDetailData | null>(null)
 const bookmarked = ref(false)
 const bookmarkLoading = ref(false)
+
+const isOwner = computed(
+  () =>
+    detail.value &&
+    authStore.user &&
+    (detail.value.ownerProfile as Record<string, unknown>).userId === authStore.user.userId,
+)
 
 const projectId = computed(() => Number(route.params.id))
 
@@ -156,7 +166,14 @@ async function toggleBookmark() {
         <div class="flex-1 min-w-0">
           <div class="hero-animate">
             <!-- 모집 뱃지 -->
-            <span class="inline-block rounded-full bg-text px-4 py-2 text-xs font-bold text-white">
+            <span
+              :class="[
+                'inline-block rounded-full px-4 py-2 text-xs font-bold',
+                detail.project.recruitmentStatus === 'RECRUITING'
+                  ? 'bg-primary-dark text-text'
+                  : 'bg-text text-white',
+              ]"
+            >
               {{ detail.project.recruitmentStatus === 'RECRUITING' ? '모집중' : '마감' }}
             </span>
 
@@ -207,17 +224,12 @@ async function toggleBookmark() {
             <!-- 진행 조건 -->
             <h2 class="mt-10 text-base font-bold text-text">진행 조건</h2>
             <p class="mt-3 text-sm text-text-secondary">
-              예상 기간
+              {{ workTypeLabel(detail.project.workType) }}
               <template v-if="detail.expectedStartDate && detail.expectedEndDate">
-                {{ formatDate(detail.expectedStartDate) }} ~
+                · {{ formatDate(detail.expectedStartDate) }} ~
                 {{ formatDate(detail.expectedEndDate) }}
               </template>
-              <template v-else-if="detail.weeklyHours">{{ detail.weeklyHours }}주</template>
-              <template v-else>-</template>
-              · {{ workTypeLabel(detail.project.workType) }}
-              <template v-if="detail.weeklyHours">
-                · 주 {{ detail.weeklyHours }}회 저녁 회의</template
-              >
+              <template v-if="detail.weeklyHours"> · 주 {{ detail.weeklyHours }}시간 </template>
             </p>
 
             <!-- 모집 역할 -->
@@ -275,55 +287,81 @@ async function toggleBookmark() {
 
             <!-- 액션 버튼 -->
             <div class="mt-7 space-y-3">
-              <!-- 신규 지원 가능 (myApplication 없거나 CANCELED) -->
-              <router-link
-                v-if="
-                  !detail.myApplication || detail.myApplication.applicationStatus === 'CANCELED'
-                "
-                :to="`/projects/${projectId}/apply`"
-                class="flex h-[46px] w-full items-center justify-center rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105"
-              >
-                프로젝트 지원
-              </router-link>
-              <!-- PENDING: 지원 검토 중 -->
-              <div
-                v-else-if="detail.myApplication.applicationStatus === 'PENDING'"
-                class="flex h-[46px] w-full items-center justify-center rounded-full bg-primary-dark text-sm font-bold text-text"
-              >
-                지원 검토 중입니다
-              </div>
-              <!-- ACCEPTED: 참여 중 -->
-              <div
-                v-else-if="detail.myApplication.applicationStatus === 'ACCEPTED'"
-                class="flex h-[46px] w-full items-center justify-center rounded-full bg-bg-muted text-sm font-bold text-text-secondary"
-              >
-                이미 참여한 프로젝트입니다
-              </div>
-              <!-- REJECTED: 거절됨 -->
-              <div
-                v-else-if="detail.myApplication.applicationStatus === 'REJECTED'"
-                class="flex h-[46px] w-full items-center justify-center rounded-full bg-bg-muted text-sm font-bold text-text-secondary"
-              >
-                지원이 거절되었습니다
-              </div>
-              <button
-                class="flex h-[46px] w-full items-center justify-center rounded-full border border-text bg-white text-sm font-bold text-text transition-transform hover:scale-105 active:scale-95"
-                :disabled="bookmarkLoading"
-                @click="toggleBookmark"
-              >
-                {{ bookmarked ? '관심 목록에서 제거' : '관심 목록에 저장' }}
-              </button>
+              <!-- 본인 프로젝트 -->
+              <template v-if="isOwner">
+                <router-link
+                  :to="`/projects/${projectId}/applicants`"
+                  class="flex h-[46px] w-full items-center justify-center rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105"
+                >
+                  지원자 관리
+                </router-link>
+                <router-link
+                  :to="`/projects/${projectId}/members`"
+                  class="flex h-[46px] w-full items-center justify-center rounded-full border border-text bg-white text-sm font-bold text-text transition-transform hover:scale-105 active:scale-95"
+                >
+                  팀원 관리
+                </router-link>
+                <button
+                  class="flex h-[46px] w-full items-center justify-center rounded-full border border-border bg-white text-sm font-bold text-text transition-transform hover:scale-105 active:scale-95"
+                  @click="router.push(`/projects/${projectId}/edit`)"
+                >
+                  모집글 수정
+                </button>
+              </template>
+
+              <!-- 타인 프로젝트 -->
+              <template v-else>
+                <!-- 신규 지원 가능 (myApplication 없거나 CANCELED) -->
+                <router-link
+                  v-if="
+                    !detail.myApplication || detail.myApplication.applicationStatus === 'CANCELED'
+                  "
+                  :to="`/projects/${projectId}/apply`"
+                  class="flex h-[46px] w-full items-center justify-center rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105"
+                >
+                  프로젝트 지원
+                </router-link>
+                <!-- PENDING: 지원 검토 중 -->
+                <div
+                  v-else-if="detail.myApplication.applicationStatus === 'PENDING'"
+                  class="flex h-[46px] w-full items-center justify-center rounded-full bg-primary-dark text-sm font-bold text-text"
+                >
+                  지원 검토 중입니다
+                </div>
+                <!-- ACCEPTED: 참여 중 -->
+                <div
+                  v-else-if="detail.myApplication.applicationStatus === 'ACCEPTED'"
+                  class="flex h-[46px] w-full items-center justify-center rounded-full bg-bg-muted text-sm font-bold text-text-secondary"
+                >
+                  이미 참여한 프로젝트입니다
+                </div>
+                <!-- REJECTED: 거절됨 -->
+                <div
+                  v-else-if="detail.myApplication.applicationStatus === 'REJECTED'"
+                  class="flex h-[46px] w-full items-center justify-center rounded-full bg-bg-muted text-sm font-bold text-text-secondary"
+                >
+                  지원이 거절되었습니다
+                </div>
+                <button
+                  class="flex h-[46px] w-full items-center justify-center rounded-full border border-text bg-white text-sm font-bold text-text transition-transform hover:scale-105 active:scale-95"
+                  :disabled="bookmarkLoading"
+                  @click="toggleBookmark"
+                >
+                  {{ bookmarked ? '관심 목록에서 제거' : '관심 목록에 저장' }}
+                </button>
+              </template>
             </div>
 
             <!-- 게시글 신고 -->
             <button
+              v-if="!isOwner"
               class="mt-4 flex h-[46px] w-full items-center justify-center rounded-full border border-border bg-white text-sm font-bold text-text transition-all duration-200 hover:scale-105 hover:border-text active:scale-95"
             >
               게시글 신고
             </button>
 
             <!-- 지원 전 확인 -->
-            <div class="mt-6 border-t border-border pt-5">
+            <div v-if="!isOwner" class="mt-6 border-t border-border pt-5">
               <p class="text-[13px] font-bold text-text">지원 전 확인</p>
               <ul class="mt-3 space-y-1.5 text-[12px] leading-relaxed text-text-secondary">
                 <li>• 원하는 역할을 선택합니다.</li>

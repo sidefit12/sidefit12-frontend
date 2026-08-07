@@ -8,6 +8,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { fetchMyProjects, type ProjectCard } from '@/api/mypage'
+import { deleteProject } from '@/api/projects'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -57,8 +58,19 @@ function recruitStatusStyle(status: string) {
   }
 }
 
+async function handleDeleteDraft(projectId: number) {
+  if (!confirm('임시저장된 모집글을 삭제할까요?')) return
+  try {
+    await deleteProject(projectId, '임시저장 모집글 삭제')
+    projects.value = projects.value.filter((p) => p.projectId !== projectId)
+  } catch {
+    alert('삭제에 실패했습니다.')
+  }
+}
+
 const filters = [
   { label: '전체', value: undefined },
+  { label: '임시저장', value: 'DRAFT' },
   { label: '모집중', value: 'RECRUITING' },
   { label: '종료', value: 'CLOSED' },
 ]
@@ -103,7 +115,8 @@ const filters = [
       <div
         v-for="proj in projects"
         :key="proj.projectId"
-        class="flex items-center justify-between rounded-xl border border-border bg-white px-6 py-5 transition-all hover:shadow-sm"
+        class="flex cursor-pointer items-center justify-between rounded-xl border border-border bg-white px-6 py-5 transition-all hover:shadow-sm"
+        @click="router.push(`/projects/${proj.projectId}`)"
       >
         <div class="flex-1">
           <p class="text-sm font-bold text-text">{{ proj.title }}</p>
@@ -123,18 +136,36 @@ const filters = [
           >
             {{ recruitStatusLabel(proj.recruitmentStatus) }}
           </span>
-          <button
-            class="rounded-full bg-text px-4 py-2 text-xs font-bold text-white transition-colors hover:opacity-80"
-            @click.stop="router.push(`/projects/${proj.projectId}/applicants`)"
-          >
-            지원자 관리
-          </button>
-          <button
-            class="rounded-full border border-text bg-white px-4 py-2 text-xs font-bold text-text transition-colors hover:bg-bg-muted"
-            @click.stop="router.push(`/projects/${proj.projectId}`)"
-          >
-            수정
-          </button>
+          <!-- DRAFT: 이어쓰기 / 삭제 -->
+          <template v-if="proj.recruitmentStatus === 'DRAFT'">
+            <button
+              class="rounded-full bg-text px-4 py-2 text-xs font-bold text-white transition-colors hover:opacity-80"
+              @click.stop="router.push({ path: '/write', query: { draftId: proj.projectId } })"
+            >
+              이어쓰기
+            </button>
+            <button
+              class="rounded-full border border-border bg-white px-4 py-2 text-xs font-bold text-text transition-colors hover:bg-bg-muted"
+              @click.stop="handleDeleteDraft(proj.projectId)"
+            >
+              삭제
+            </button>
+          </template>
+          <!-- RECRUITING / CLOSED: 지원자 관리 / 수정 -->
+          <template v-else>
+            <button
+              class="rounded-full bg-text px-4 py-2 text-xs font-bold text-white transition-colors hover:opacity-80"
+              @click.stop="router.push(`/projects/${proj.projectId}/applicants`)"
+            >
+              지원자 관리
+            </button>
+            <button
+              class="rounded-full border border-text bg-white px-4 py-2 text-xs font-bold text-text transition-colors hover:bg-bg-muted"
+              @click.stop="router.push(`/projects/${proj.projectId}/edit`)"
+            >
+              수정
+            </button>
+          </template>
         </div>
       </div>
     </div>

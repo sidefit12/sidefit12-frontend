@@ -5,16 +5,25 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import TechStackChip from '@/components/TechStackChip.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import { type TechStackName } from '@/constants/techStacks'
 import { fetchOnboardingOptions } from '@/api/onboarding'
+import { fetchProjectDetail } from '@/api/projectDetail'
+import { patchProject, patchRecruitmentStatus } from '@/api/projects'
 import apiClient from '@/api/client'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+/* ────── DRAFT 모드 ────── */
+const draftId = ref<number | null>(null)
+const draftLoading = ref(!!route.query.draftId)
+const saving = ref(false)
+const saveSuccess = ref(false)
 
 /* ────── 단계 ────── */
 const step = ref(1)
@@ -33,8 +42,10 @@ function selectWorkType(value: 'ONLINE' | 'OFFLINE' | 'HYBRID') {
   workType.value = value
   workTypeDropdownOpen.value = false
 }
-const expectedWeeks = ref('')
 const recruitmentDeadline = ref('')
+const weeklyHours = ref<number | null>(null)
+const expectedStartDate = ref('')
+const expectedEndDate = ref('')
 
 /* ────── Step 2: 모집 역할 ────── */
 const allTopics = ref<{ topicId: number; topicName: string }[]>([])
@@ -48,7 +59,6 @@ interface PositionItem {
   roleId: number
   roleName: string
   positionTitle: string
-  responsibilities: string
   requiredCount: number
 }
 const positions = ref<PositionItem[]>([])
@@ -81,6 +91,42 @@ onMounted(async () => {
       roleId: r.roleId,
       roleName: r.roleName,
     }))
+
+    // DRAFT 이어쓰기: query에 draftId가 있으면 기존 데이터 로드
+    const queryDraftId = Number(route.query.draftId)
+    if (queryDraftId) {
+      draftLoading.value = true
+      draftId.value = queryDraftId
+      try {
+        const detailRes = await fetchProjectDetail(queryDraftId)
+        const d = detailRes.data
+        title.value = d.project.title || ''
+        description.value = d.description || ''
+        workType.value = (d.project.workType as 'ONLINE' | 'OFFLINE' | 'HYBRID') || 'ONLINE'
+        if (d.project.recruitmentDeadline) {
+          recruitmentDeadline.value = d.project.recruitmentDeadline.split('T')[0]
+        }
+        selectedTopicIds.value = d.project.topics.map((t: { topicId: number }) => t.topicId)
+        selectedTechStackIds.value = d.project.techStacks.map(
+          (ts: { techStackId: number }) => ts.techStackId,
+        )
+        positions.value = d.project.positions.map(
+          (p: {
+            projectPositionId: number
+            positionTitle: string
+            requiredCount: number
+            role: { roleId: number; roleName: string }
+          }) => ({
+            roleId: p.role.roleId,
+            roleName: p.role.roleName,
+            positionTitle: p.positionTitle,
+            requiredCount: p.requiredCount,
+          }),
+        )
+      } finally {
+        draftLoading.value = false
+      }
+    }
   } catch {
     // 옵션 로드 실패
   }
@@ -102,7 +148,6 @@ function addPosition(roleId: number, roleName: string) {
     roleId,
     roleName,
     positionTitle: roleName,
-    responsibilities: '',
     requiredCount: 1,
   })
 }
@@ -132,6 +177,53 @@ function toggleTechStack(id: number) {
   else if (selectedTechStackIds.value.length < 20) selectedTechStackIds.value.push(id)
 }
 
+/* ────── 임시저장 ────── */
+async function handleSaveDraft() {
+  saving.value = true
+  try {
+    const deadlineDate = recruitmentDeadline.value ? new Date(recruitmentDeadline.value) : undefined
+    if (deadlineDate) deadlineDate.setHours(23, 59, 59)
+
+    const payload = {
+      title: title.value || '제목 없음',
+      summary: description.value.slice(0, 500) || title.value || '임시저장',
+      description: description.value,
+      workType: workType.value,
+      recruitmentDeadline: deadlineDate ? deadlineDate.toISOString() : undefined,
+      expectedStartDate: expectedStartDate.value || undefined,
+      expectedEndDate: expectedEndDate.value || undefined,
+      weeklyHours: weeklyHours.value || undefined,
+      topicIds: selectedTopicIds.value,
+      techStacks: selectedTechStackIds.value.map((id) => ({
+        techStackId: id,
+        requirementType: 'PREFERRED' as const,
+      })),
+      positions: positions.value.map((p) => ({
+        roleId: p.roleId,
+        positionTitle: p.positionTitle,
+        requiredCount: p.requiredCount,
+      })),
+    }
+
+    if (draftId.value) {
+      // 기존 DRAFT 업데이트
+      await patchProject(draftId.value, payload)
+    } else {
+      // 새 DRAFT 생성
+      const { data } = await apiClient.post('/api/v1/projects', payload)
+      draftId.value = data.data.project.projectId
+    }
+    saveSuccess.value = true
+    setTimeout(() => {
+      saveSuccess.value = false
+    }, 2500)
+  } catch {
+    alert('임시저장에 실패했습니다.')
+  } finally {
+    saving.value = false
+  }
+}
+
 /* ────── 제출 ────── */
 function requestPublish() {
   confirmPublishOpen.value = true
@@ -150,6 +242,9 @@ async function handleSubmit() {
       description: description.value,
       workType: workType.value,
       recruitmentDeadline: deadlineDate.toISOString(),
+      expectedStartDate: expectedStartDate.value || undefined,
+      expectedEndDate: expectedEndDate.value || undefined,
+      weeklyHours: weeklyHours.value || undefined,
       topicIds: selectedTopicIds.value,
       techStacks: selectedTechStackIds.value.map((id) => ({
         techStackId: id,
@@ -158,13 +253,22 @@ async function handleSubmit() {
       positions: positions.value.map((p) => ({
         roleId: p.roleId,
         positionTitle: p.positionTitle,
-        responsibilities: p.responsibilities || undefined,
         requiredCount: p.requiredCount,
       })),
     }
 
-    const { data } = await apiClient.post('/api/v1/projects', payload)
-    createdProjectId.value = data.data.project.projectId
+    if (draftId.value) {
+      // 기존 DRAFT 업데이트 후 공개
+      await patchProject(draftId.value, payload)
+      await patchRecruitmentStatus(draftId.value, 'RECRUITING')
+      createdProjectId.value = draftId.value
+    } else {
+      // 새로 생성 후 공개
+      const { data } = await apiClient.post('/api/v1/projects', payload)
+      createdProjectId.value = data.data.project.projectId
+      await patchRecruitmentStatus(createdProjectId.value!, 'RECRUITING')
+    }
+
     submitSuccess.value = true
   } catch {
     alert('모집글 등록에 실패했습니다.')
@@ -222,6 +326,32 @@ const totalRecruitCount = computed(() =>
       </div>
     </transition>
 
+    <!-- 임시저장 성공 오버레이 -->
+    <transition name="fade-in-up">
+      <div
+        v-if="saveSuccess"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+      >
+        <div class="flex w-[780px] flex-col items-center rounded-2xl bg-white py-16 shadow-2xl">
+          <div
+            class="check-bounce flex size-[104px] items-center justify-center rounded-full bg-primary-dark"
+          >
+            <span class="text-4xl text-text">✓</span>
+          </div>
+          <h2 class="mt-8 text-2xl font-bold text-text">임시저장 완료</h2>
+          <p class="mt-3 text-sm text-text-secondary">
+            작성 중인 내용이 저장되었습니다. 계속해서 작성하실 수 있어요.
+          </p>
+          <button
+            class="mt-10 h-[46px] w-[220px] rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105"
+            @click="saveSuccess = false"
+          >
+            계속 작성
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <!-- 성공 화면 -->
     <div v-if="submitSuccess" class="flex flex-col items-center py-24">
       <div
@@ -246,6 +376,22 @@ const totalRecruitCount = computed(() =>
     </div>
 
     <!-- 폼 -->
+    <template v-else-if="draftLoading">
+      <h1 class="hero-animate text-[30px] font-bold text-text">모집글 작성</h1>
+      <p class="mt-2 text-sm text-text-secondary">임시저장된 데이터를 불러오는 중...</p>
+      <div class="mt-8 flex gap-6">
+        <div class="flex-1 space-y-4">
+          <div class="skeleton-pulse h-[48px] rounded-lg bg-bg-card" />
+          <div class="skeleton-pulse h-[200px] rounded-lg bg-bg-card" />
+          <div class="skeleton-pulse h-[48px] rounded-lg bg-bg-card" />
+          <div class="skeleton-pulse h-[120px] rounded-lg bg-bg-card" />
+        </div>
+        <div class="hidden w-[436px] shrink-0 lg:block">
+          <div class="skeleton-pulse h-[300px] rounded-xl bg-bg-card" />
+        </div>
+      </div>
+    </template>
+
     <template v-else>
       <h1 class="hero-animate text-[30px] font-bold text-text">모집글 작성</h1>
 
@@ -306,8 +452,8 @@ const totalRecruitCount = computed(() =>
             />
           </div>
 
-          <!-- 진행 방식 / 예상 기간 / 마감일 -->
-          <div class="mt-6 grid grid-cols-3 gap-4">
+          <!-- 진행 방식 / 모집 마감일 -->
+          <div class="mt-6 grid grid-cols-2 gap-4">
             <div>
               <label class="text-[13px] font-bold text-text"
                 >진행 방식 <span class="text-[#D43F21]">*</span></label
@@ -344,17 +490,6 @@ const totalRecruitCount = computed(() =>
             </div>
             <div>
               <label class="text-[13px] font-bold text-text"
-                >예상 기간 <span class="text-[#D43F21]">*</span></label
-              >
-              <input
-                v-model="expectedWeeks"
-                type="text"
-                class="mt-2 h-[48px] w-full rounded-lg border border-border bg-white px-4 text-[13px] text-text outline-none focus:border-text"
-                placeholder="예: 12주"
-              />
-            </div>
-            <div>
-              <label class="text-[13px] font-bold text-text"
                 >모집 마감일 <span class="text-[#D43F21]">*</span></label
               >
               <div class="mt-2">
@@ -367,8 +502,62 @@ const totalRecruitCount = computed(() =>
             </div>
           </div>
 
+          <!-- 프로젝트 기간 / 주당 참여시간 -->
+          <div class="mt-6 grid grid-cols-3 gap-4">
+            <div>
+              <label class="text-[13px] font-bold text-text">프로젝트 시작일</label>
+              <div class="mt-2">
+                <DatePicker
+                  v-model="expectedStartDate"
+                  placeholder="시작일 선택"
+                  :min-date="new Date().toISOString().split('T')[0]"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-[13px] font-bold text-text">프로젝트 종료일</label>
+              <div class="mt-2">
+                <DatePicker
+                  v-model="expectedEndDate"
+                  placeholder="종료일 선택"
+                  :min-date="expectedStartDate || new Date().toISOString().split('T')[0]"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-[13px] font-bold text-text">주당 참여시간</label>
+              <div class="relative mt-2">
+                <input
+                  v-model.number="weeklyHours"
+                  type="number"
+                  min="1"
+                  max="168"
+                  step="1"
+                  class="h-[48px] w-full rounded-lg border border-border bg-white px-4 pr-12 text-[13px] text-text outline-none focus:border-text"
+                  placeholder="예: 10"
+                  @keydown="$event.key === '.' && $event.preventDefault()"
+                />
+                <span
+                  class="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-text-secondary"
+                  >시간</span
+                >
+              </div>
+            </div>
+          </div>
+
           <!-- 버튼 -->
           <div class="mt-10 flex justify-end gap-3">
+            <button
+              class="flex h-[46px] w-[150px] items-center justify-center rounded-full border border-border bg-white text-sm font-bold text-text transition-all hover:bg-bg-muted"
+              :disabled="saving"
+              @click="handleSaveDraft"
+            >
+              <span
+                v-if="saving"
+                class="inline-block size-4 animate-spin rounded-full border-2 border-text border-t-transparent"
+              />
+              <span v-else>임시저장</span>
+            </button>
             <button
               class="h-[46px] w-[162px] rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105 disabled:opacity-40"
               :disabled="!step1Valid"
@@ -383,7 +572,9 @@ const totalRecruitCount = computed(() =>
         <div v-if="step === 2" class="flex-1 rounded-xl border border-border bg-white p-8">
           <!-- 관심 토픽 -->
           <div>
-            <p class="text-[13px] font-bold text-text">관심 토픽 *</p>
+            <p class="text-[13px] font-bold text-text">
+              관심 토픽 <span class="text-[#D43F21]">*</span>
+            </p>
             <div class="mt-3 flex flex-wrap gap-2">
               <button
                 v-for="topic in allTopics"
@@ -427,7 +618,9 @@ const totalRecruitCount = computed(() =>
 
           <!-- 모집 역할과 인원 -->
           <div class="mt-6">
-            <p class="text-[13px] font-bold text-text">모집 역할과 인원 *</p>
+            <p class="text-[13px] font-bold text-text">
+              모집 역할과 인원 <span class="text-[#D43F21]">*</span>
+            </p>
             <!-- 역할 추가 버튼 -->
             <div class="mt-3 flex flex-wrap gap-2">
               <button
@@ -477,12 +670,6 @@ const totalRecruitCount = computed(() =>
                     </button>
                   </div>
                 </div>
-                <input
-                  v-model="pos.responsibilities"
-                  type="text"
-                  class="mt-2 h-[40px] w-full rounded-lg border border-border bg-white px-3 text-[13px] text-text-secondary outline-none focus:border-text"
-                  placeholder="담당 업무 설명 (선택)"
-                />
               </div>
             </div>
           </div>
@@ -494,6 +681,17 @@ const totalRecruitCount = computed(() =>
               @click="step = 1"
             >
               이전
+            </button>
+            <button
+              class="flex h-[46px] w-[150px] items-center justify-center rounded-full border border-border bg-white text-sm font-bold text-text transition-all hover:bg-bg-muted"
+              :disabled="saving"
+              @click="handleSaveDraft"
+            >
+              <span
+                v-if="saving"
+                class="inline-block size-4 animate-spin rounded-full border-2 border-text border-t-transparent"
+              />
+              <span v-else>임시저장</span>
             </button>
             <button
               class="h-[46px] w-[162px] rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105 disabled:opacity-40"
@@ -532,8 +730,12 @@ const totalRecruitCount = computed(() =>
           <div class="mt-5">
             <h4 class="text-sm font-bold text-text">진행 조건</h4>
             <p class="mt-2 text-[13px] text-text-secondary">
-              {{ workTypeLabel(workType) }} · {{ expectedWeeks || '-' }} ·
-              {{ recruitmentDeadline }} 마감
+              {{ workTypeLabel(workType) }}
+              <template v-if="expectedStartDate && expectedEndDate">
+                · {{ expectedStartDate }} ~ {{ expectedEndDate }}
+              </template>
+              <template v-if="weeklyHours"> · 주 {{ weeklyHours }}시간</template>
+              · {{ recruitmentDeadline }} 마감
             </p>
           </div>
 
@@ -588,7 +790,7 @@ const totalRecruitCount = computed(() =>
                   </h4>
                   <p class="mt-2 text-[13px] text-text-secondary">
                     {{ workTypeLabel(workType) }}
-                    <template v-if="expectedWeeks"> · {{ expectedWeeks }}</template>
+                    <template v-if="weeklyHours"> · 주 {{ weeklyHours }}시간</template>
                     <template v-if="recruitmentDeadline">
                       · {{ recruitmentDeadline }} 마감</template
                     >
