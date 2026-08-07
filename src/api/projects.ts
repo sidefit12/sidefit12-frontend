@@ -51,3 +51,64 @@ export async function fetchProjects(params: ProjectListParams = {}): Promise<Pro
   })
   return data
 }
+
+/* ────── 모집글 수정 ────── */
+
+export interface PatchProjectPayload {
+  title?: string
+  summary?: string
+  description?: string
+  workType?: 'ONLINE' | 'OFFLINE' | 'HYBRID'
+  recruitmentDeadline?: string
+  weeklyHours?: number | null
+  expectedStartDate?: string
+  expectedEndDate?: string
+  topicIds?: number[]
+  techStacks?: { techStackId: number; requirementType: 'PREFERRED' | 'REQUIRED' }[]
+  positions?: {
+    projectPositionId?: number
+    roleId: number
+    positionTitle: string
+    requiredCount: number
+  }[]
+}
+
+/**
+ * 모집글 부분 수정
+ * PATCH /api/v1/projects/{projectId}
+ */
+export async function patchProject(
+  projectId: number,
+  payload: PatchProjectPayload,
+): Promise<{ success: boolean }> {
+  const { data } = await apiClient.patch(`/api/v1/projects/${projectId}`, payload)
+  return data
+}
+
+/**
+ * 모집 상태 변경
+ * PATCH /api/v1/projects/{projectId}/recruitment-status
+ */
+export async function patchRecruitmentStatus(
+  projectId: number,
+  recruitmentStatus: 'RECRUITING' | 'CLOSED',
+): Promise<{ success: boolean }> {
+  const { data } = await apiClient.patch(`/api/v1/projects/${projectId}/recruitment-status`, {
+    recruitmentStatus,
+  })
+  return data
+}
+
+/**
+ * 모집글 삭제
+ * DELETE /api/v1/projects/{projectId}
+ */
+export async function deleteProject(
+  projectId: number,
+  deletionReason: string,
+): Promise<{ success: boolean }> {
+  const { data } = await apiClient.delete(`/api/v1/projects/${projectId}`, {
+    data: { deletionReason },
+  })
+  return data
+}

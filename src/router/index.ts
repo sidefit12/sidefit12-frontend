@@ -60,6 +60,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ApplicantDetailView.vue'),
   },
   {
+    path: '/projects/:id/edit',
+    name: 'ProjectEdit',
+    component: () => import('@/views/ProjectEditView.vue'),
+  },
+  {
     path: '/write',
     name: 'ProjectWrite',
     component: () => import('@/views/ProjectWriteView.vue'),
@@ -88,6 +93,16 @@ const routes: RouteRecordRaw[] = [
     path: '/profile/edit',
     name: 'ProfileEdit',
     component: () => import('@/views/ProfileEditView.vue'),
+  },
+  {
+    path: '/projects/:id/members',
+    name: 'MemberManage',
+    component: () => import('@/views/MemberManageView.vue'),
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFoundView.vue'),
   },
 ]
 

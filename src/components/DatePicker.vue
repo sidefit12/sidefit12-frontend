@@ -93,7 +93,7 @@ function isSelected(day: number): boolean {
     <transition name="dropdown">
       <div
         v-if="open"
-        class="absolute bottom-[52px] left-0 z-50 w-[280px] rounded-xl border border-border bg-white p-4 shadow-lg"
+        class="absolute top-[52px] left-0 z-50 w-[280px] rounded-xl border border-border bg-white p-4 shadow-lg"
       >
         <!-- 헤더 -->
         <div class="flex items-center justify-between">
