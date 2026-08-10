@@ -100,6 +100,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/MemberManageView.vue'),
   },
   {
+    path: '/recommendations',
+    name: 'Recommendations',
+    component: () => import('@/views/RecommendationsView.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFoundView.vue'),
