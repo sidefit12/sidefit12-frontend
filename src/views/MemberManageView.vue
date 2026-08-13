@@ -302,7 +302,12 @@ const positionSummaryText = computed(() =>
               <div class="flex items-center gap-4">
                 <DefaultAvatar :size="48" :image-url="member.profileImageUrl" />
                 <div>
-                  <p class="text-sm font-bold text-text">{{ member.nickname }}</p>
+                  <router-link
+                    :to="`/users/${member.userId}`"
+                    class="text-sm font-bold text-text hover:underline"
+                  >
+                    {{ member.nickname }}
+                  </router-link>
                   <p v-if="member.techStacks.length" class="mt-0.5 text-[13px] text-text-secondary">
                     {{ member.techStacks.slice(0, 4).join(' · ') }}
                   </p>

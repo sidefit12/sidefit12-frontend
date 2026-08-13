@@ -105,6 +105,21 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/RecommendationsView.vue'),
   },
   {
+    path: '/password-reset',
+    name: 'PasswordResetRequest',
+    component: () => import('@/views/PasswordResetRequestView.vue'),
+  },
+  {
+    path: '/password-reset/confirm',
+    name: 'PasswordResetConfirm',
+    component: () => import('@/views/PasswordResetConfirmView.vue'),
+  },
+  {
+    path: '/users/:id',
+    name: 'PublicProfile',
+    component: () => import('@/views/PublicProfileView.vue'),
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFoundView.vue'),

@@ -59,12 +59,26 @@ function recruitStatusStyle(status: string) {
 }
 
 async function handleDeleteDraft(projectId: number) {
-  if (!confirm('임시저장된 모집글을 삭제할까요?')) return
+  deleteTargetId.value = projectId
+  deleteModalOpen.value = true
+}
+
+const deleteModalOpen = ref(false)
+const deleteTargetId = ref<number | null>(null)
+const deleting = ref(false)
+
+async function confirmDelete() {
+  if (!deleteTargetId.value) return
+  deleting.value = true
   try {
-    await deleteProject(projectId, '임시저장 모집글 삭제')
-    projects.value = projects.value.filter((p) => p.projectId !== projectId)
+    await deleteProject(deleteTargetId.value, '임시저장 모집글 삭제')
+    projects.value = projects.value.filter((p) => p.projectId !== deleteTargetId.value)
+    deleteModalOpen.value = false
   } catch {
-    alert('삭제에 실패했습니다.')
+    deleteModalOpen.value = false
+  } finally {
+    deleting.value = false
+    deleteTargetId.value = null
   }
 }
 
@@ -179,5 +193,40 @@ const filters = [
         새 모집글 작성
       </button>
     </div>
+
+    <!-- 삭제 확인 모달 -->
+    <Teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="deleteModalOpen"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+        >
+          <div class="w-full max-w-[480px] rounded-xl bg-white px-8 py-8">
+            <div
+              class="flex h-[58px] w-[58px] items-center justify-center rounded-full border border-border"
+            >
+              <span class="text-xl font-bold text-text">?</span>
+            </div>
+            <h2 class="mt-6 text-xl font-bold text-text">임시저장 모집글을 삭제할까요?</h2>
+            <p class="mt-3 text-sm text-text-secondary">삭제한 모집글은 복구할 수 없습니다.</p>
+            <div class="mt-8 flex gap-4">
+              <button
+                class="h-[46px] flex-1 rounded-full border border-border bg-white text-sm font-bold text-text transition-all hover:bg-bg-muted"
+                @click="deleteModalOpen = false"
+              >
+                취소
+              </button>
+              <button
+                class="h-[46px] flex-1 rounded-full bg-text text-sm font-bold text-white transition-transform hover:scale-105 disabled:opacity-40"
+                :disabled="deleting"
+                @click="confirmDelete"
+              >
+                {{ deleting ? '삭제 중...' : '삭제' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>

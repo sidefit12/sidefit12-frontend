@@ -162,7 +162,12 @@ function proficiencyLabel(level: string): string {
               :image-url="(applicantProfile as Record<string, unknown>).profileImage ? ((applicantProfile as Record<string, unknown>).profileImage as Record<string, unknown>).url as string : null"
             />
             <div>
-              <h2 class="text-xl font-bold text-text">{{ applicantNickname }}</h2>
+              <router-link
+                :to="`/users/${(applicantProfile as Record<string, unknown>).userId}`"
+                class="text-xl font-bold text-text hover:underline"
+              >
+                {{ applicantNickname }}
+              </router-link>
               <p class="mt-1 text-sm text-text-secondary">
                 {{ applicantRolesText }}
               </p>

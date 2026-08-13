@@ -82,6 +82,32 @@ export interface ProfileResponse {
   data: ProfileData
 }
 
+/* ────── 공개 프로필 조회 ────── */
+
+export interface PublicProfileData {
+  userId: number
+  nickname: string
+  introduction: string | null
+  profileImageFileId: number | null
+  publicMaterialFileId: number | null
+  profileImage: ProfileFileData | null
+  publicMaterial: ProfileFileData | null
+  externalLinkUrl: string | null
+  topics: SelectedTopic[]
+  techStacks: SelectedTechStack[]
+  roles: SelectedRole[]
+}
+
+export interface PublicProfileResponse {
+  success: boolean
+  data: PublicProfileData
+}
+
+export async function fetchPublicProfile(userId: number): Promise<PublicProfileResponse> {
+  const { data } = await apiClient.get<PublicProfileResponse>(`/api/v1/users/${userId}/profile`)
+  return data
+}
+
 /* ────── 내 프로필 조회 ────── */
 
 export async function fetchMyProfile(): Promise<ProfileResponse> {
