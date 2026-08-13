@@ -11,6 +11,7 @@ import {
   replaceTechStacks,
   replaceRoles,
   checkNicknameAvailability,
+  fetchPublicProfile,
 } from '@/api/profile'
 import apiClient from '@/api/client'
 
@@ -103,5 +104,28 @@ describe('profile API', () => {
       params: { nickname: 'testuser' },
     })
     expect(result.data.available).toBe(true)
+  })
+
+  // 공개 프로필 조회
+  it('fetchPublicProfile: GET /api/v1/users/:id/profile 호출', async () => {
+    const mockRes = {
+      data: {
+        success: true,
+        data: {
+          userId: 5,
+          nickname: 'other_user',
+          introduction: '백엔드 개발자입니다.',
+          topics: [],
+          techStacks: [],
+          roles: [],
+        },
+      },
+    }
+    vi.mocked(apiClient.get).mockResolvedValue(mockRes)
+
+    const result = await fetchPublicProfile(5)
+
+    expect(apiClient.get).toHaveBeenCalledWith('/api/v1/users/5/profile')
+    expect(result.data.nickname).toBe('other_user')
   })
 })

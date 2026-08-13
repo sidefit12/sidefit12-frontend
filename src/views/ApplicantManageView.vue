@@ -332,7 +332,13 @@ const statCards = computed(() => [
           <div class="flex w-[400px] items-center gap-3">
             <DefaultAvatar :size="48" />
             <div>
-              <p class="text-sm font-bold text-text">{{ app.applicant.nickname }}</p>
+              <router-link
+                :to="`/users/${app.applicant.userId}`"
+                class="text-sm font-bold text-text hover:underline"
+                @click.stop
+              >
+                {{ app.applicant.nickname }}
+              </router-link>
               <p
                 v-if="app.applicant.techStacks?.length"
                 class="mt-0.5 text-[13px] text-text-secondary"

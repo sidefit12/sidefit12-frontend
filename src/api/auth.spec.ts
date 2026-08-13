@@ -4,7 +4,13 @@
  * login, logout, fetchCurrentUser 함수가 올바른 엔드포인트를 호출하는지 검증한다.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { login, logout, fetchCurrentUser } from '@/api/auth'
+import {
+  login,
+  logout,
+  fetchCurrentUser,
+  requestPasswordReset,
+  confirmPasswordReset,
+} from '@/api/auth'
 import apiClient from '@/api/client'
 
 vi.mock('@/api/client', () => ({
@@ -68,6 +74,36 @@ describe('auth API', () => {
 
       expect(apiClient.get).toHaveBeenCalledWith('/api/v1/auth/me')
       expect(result.data.user.nickname).toBe('test')
+    })
+  })
+
+  describe('requestPasswordReset', () => {
+    it('POST /api/v1/auth/password-reset/request 호출', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: {} })
+
+      await requestPasswordReset({ email: 'user@test.com' })
+
+      expect(apiClient.post).toHaveBeenCalledWith('/api/v1/auth/password-reset/request', {
+        email: 'user@test.com',
+      })
+    })
+  })
+
+  describe('confirmPasswordReset', () => {
+    it('POST /api/v1/auth/password-reset/confirm 호출', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: {} })
+
+      await confirmPasswordReset({
+        newPassword: 'NewPass123!',
+        newPasswordConfirm: 'NewPass123!',
+        resetToken: 'prt_abc',
+      })
+
+      expect(apiClient.post).toHaveBeenCalledWith('/api/v1/auth/password-reset/confirm', {
+        newPassword: 'NewPass123!',
+        newPasswordConfirm: 'NewPass123!',
+        resetToken: 'prt_abc',
+      })
     })
   })
 })

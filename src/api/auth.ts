@@ -72,3 +72,33 @@ export async function fetchCurrentUser() {
   const { data } = await apiClient.get('/api/v1/auth/me')
   return data
 }
+
+/* ────────────────────────────────────────────
+ * 비밀번호 재설정
+ * ──────────────────────────────────────────── */
+
+export interface PasswordResetRequestPayload {
+  email: string
+}
+
+export interface PasswordResetConfirmPayload {
+  newPassword: string
+  newPasswordConfirm: string
+  resetToken: string
+}
+
+/**
+ * 비밀번호 재설정 메일 발송 요청
+ * POST /api/v1/auth/password-reset/request → 202
+ */
+export async function requestPasswordReset(payload: PasswordResetRequestPayload): Promise<void> {
+  await apiClient.post('/api/v1/auth/password-reset/request', payload)
+}
+
+/**
+ * 새 비밀번호 확정
+ * POST /api/v1/auth/password-reset/confirm → 204
+ */
+export async function confirmPasswordReset(payload: PasswordResetConfirmPayload): Promise<void> {
+  await apiClient.post('/api/v1/auth/password-reset/confirm', payload)
+}
