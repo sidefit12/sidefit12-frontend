@@ -10,7 +10,7 @@ import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 
 const route = useRoute()
-const hideHeader = computed(() => route.name === 'NotFound')
+const hideHeader = computed(() => route.name === 'NotFound' || route.name === 'Landing')
 </script>
 
 <template>

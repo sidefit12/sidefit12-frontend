@@ -104,7 +104,6 @@ function deadlineLabel(deadline: string): string {
       <section class="mt-10">
         <div class="mb-5 flex items-end justify-between">
           <h2 class="text-2xl font-bold text-text">회원님을 위한 추천</h2>
-          <span class="text-[13px] text-text-secondary"> 프로필 기준 추천 · 이유 제공 </span>
         </div>
 
         <div
@@ -121,6 +120,7 @@ function deadlineLabel(deadline: string): string {
             :topic="rec.project.topics[0]?.topicName ?? ''"
             :tech-stacks="rec.project.techStacks.map((t) => t.techStackName)"
             :roles="positionSummary(rec.project)"
+            :reasons="rec.reasons"
           />
         </div>
 

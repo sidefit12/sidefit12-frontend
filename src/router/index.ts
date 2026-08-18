@@ -18,6 +18,12 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Home',
     component: () => import('@/views/HomeView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/landing',
+    name: 'Landing',
+    component: () => import('@/views/LandingView.vue'),
   },
   {
     path: '/login',
@@ -144,6 +150,16 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+/** 비로그인 유저가 인증 필요 페이지 접근 시 랜딩으로 리다이렉트 */
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth) {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      return { name: 'Landing' }
+    }
+  }
 })
 
 export default router

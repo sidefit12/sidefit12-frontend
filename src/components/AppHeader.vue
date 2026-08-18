@@ -3,8 +3,8 @@
   @description 전역 네비게이션 헤더. 로그인 상태에 따라 프로필/로그인 버튼을 표시한다.
 -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
@@ -14,10 +14,13 @@ import { requestFcmToken, onForegroundMessage } from '@/lib/firebase'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const menuOpen = ref(false)
 const unreadCount = ref(0)
 const toasts = ref<(ToastPayload & { id: number })[]>([])
 let toastId = 0
+
+const isAuthPage = computed(() => route.name === 'Login' || route.name === 'Signup')
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -91,6 +94,7 @@ onMounted(async () => {
           프로젝트 찾기
         </router-link>
         <router-link
+          v-if="authStore.isLoggedIn"
           to="/recommendations"
           class="whitespace-nowrap text-sm text-text-secondary hover:text-text"
           active-class="!font-bold !text-text"
@@ -179,18 +183,20 @@ onMounted(async () => {
 
       <!-- 비로그인 상태 -->
       <template v-else>
-        <router-link
-          to="/login"
-          class="ml-auto whitespace-nowrap text-sm text-text-secondary hover:text-text"
-        >
-          로그인
-        </router-link>
-        <router-link
-          to="/signup"
-          class="ml-4 flex h-[46px] items-center justify-center rounded-full bg-text px-6 text-sm font-bold text-white"
-        >
-          회원가입
-        </router-link>
+        <template v-if="!isAuthPage">
+          <router-link
+            to="/login"
+            class="ml-auto whitespace-nowrap text-sm text-text-secondary hover:text-text"
+          >
+            로그인
+          </router-link>
+          <router-link
+            to="/signup"
+            class="ml-4 flex h-[46px] items-center justify-center rounded-full bg-text px-6 text-sm font-bold text-white"
+          >
+            회원가입
+          </router-link>
+        </template>
       </template>
     </div>
   </header>
