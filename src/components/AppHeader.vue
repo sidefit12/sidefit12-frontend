@@ -3,14 +3,21 @@
   @description 전역 네비게이션 헤더. 로그인 상태에 따라 프로필/로그인 버튼을 표시한다.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
+import type { ToastPayload } from '@/components/NotificationToast.vue'
+import { fetchUnreadCount, registerPushDevice } from '@/api/notifications'
+import { requestFcmToken, onForegroundMessage } from '@/lib/firebase'
 
 const authStore = useAuthStore()
 const router = useRouter()
 const menuOpen = ref(false)
+const unreadCount = ref(0)
+const toasts = ref<(ToastPayload & { id: number })[]>([])
+let toastId = 0
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -25,6 +32,45 @@ async function handleLogout() {
   await authStore.logout()
   router.push('/login')
 }
+
+onMounted(async () => {
+  if (authStore.isLoggedIn) {
+    try {
+      const res = await fetchUnreadCount()
+      unreadCount.value = res.data.unreadCount
+    } catch {
+      // 무시
+    }
+
+    // FCM 토큰 등록
+    try {
+      const token = await requestFcmToken()
+      if (token) {
+        await registerPushDevice(token)
+      }
+    } catch {
+      // 무시
+    }
+
+    // 포그라운드 메시지 수신 시 배지 갱신 + 토스트
+    onForegroundMessage((payload: unknown) => {
+      unreadCount.value += 1
+      const msg = payload as {
+        notification?: { title?: string; body?: string }
+        data?: { notificationType?: string; referenceType?: string; referenceId?: string }
+      }
+      const toast: ToastPayload & { id: number } = {
+        id: ++toastId,
+        title: msg.notification?.title || '새 알림',
+        body: msg.notification?.body || '',
+        notificationType: msg.data?.notificationType || '',
+        referenceType: msg.data?.referenceType || '',
+        referenceId: msg.data?.referenceId || '',
+      }
+      toasts.value.push(toast)
+    })
+  }
+})
 </script>
 
 <template>
@@ -61,20 +107,40 @@ async function handleLogout() {
         </router-link>
       </nav>
 
-      <!-- Search -->
-      <div class="ml-auto flex h-11 w-[286px] items-center rounded-full bg-bg-muted px-5">
-        <span class="text-[13px] text-[#8d8d8d]">프로젝트명, 기술 스택 검색</span>
-        <span class="ml-auto text-lg text-text-secondary">⌕</span>
-      </div>
-
       <!-- 로그인 상태 -->
       <template v-if="authStore.isLoggedIn">
         <!-- CTA -->
         <router-link
           to="/write"
-          class="ml-5 flex h-[46px] w-[150px] items-center justify-center rounded-full bg-primary text-sm font-bold text-text"
+          class="ml-auto flex h-[46px] w-[150px] items-center justify-center rounded-full bg-primary text-sm font-bold text-text"
         >
           모집글 작성
+        </router-link>
+
+        <!-- 알림 아이콘 -->
+        <router-link
+          to="/notifications"
+          class="notification-bell relative ml-5 flex h-10 w-10 items-center justify-center rounded-full transition-all hover:bg-bg-muted active:scale-90"
+        >
+          <svg
+            class="h-[22px] w-[22px] text-text"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+            />
+          </svg>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute right-1 top-1 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#d43f21] px-1 text-[9px] font-bold text-white"
+          >
+            {{ unreadCount > 99 ? '99+' : unreadCount }}
+          </span>
         </router-link>
 
         <!-- Profile -->
@@ -84,35 +150,14 @@ async function handleLogout() {
             <span v-if="authStore.user?.nickname" class="text-sm font-bold text-text">{{
               authStore.user.nickname
             }}</span>
-            <span
-              class="ml-8 flex size-6 -translate-y-0.5 items-center justify-center text-sm text-text-secondary transition-transform duration-200"
-              :class="menuOpen ? 'rotate-180' : ''"
-              >⌄</span
-            >
           </button>
 
           <!-- 드롭다운 메뉴 -->
           <transition name="dropdown">
             <div
               v-if="menuOpen"
-              class="absolute right-0 top-[56px] z-50 w-[220px] rounded-xl border border-border bg-white py-2 shadow-lg"
+              class="absolute right-0 top-[56px] z-50 w-[180px] rounded-xl border border-border bg-white py-2 shadow-lg"
             >
-              <router-link
-                to="/notifications"
-                class="flex items-center justify-between px-5 py-3 text-sm text-text hover:bg-bg-muted"
-                @click="closeMenu"
-              >
-                알림
-                <span class="text-xs text-text-secondary">3</span>
-              </router-link>
-              <router-link
-                to="/settings/notifications"
-                class="flex items-center justify-between px-5 py-3 text-sm text-text hover:bg-bg-muted"
-                @click="closeMenu"
-              >
-                알림 설정
-              </router-link>
-              <div class="mx-5 my-1 border-t border-border" />
               <button
                 class="flex w-full items-center px-5 py-3 text-sm text-text hover:bg-bg-muted"
                 @click="handleLogout"
@@ -142,4 +187,14 @@ async function handleLogout() {
       </template>
     </div>
   </header>
+
+  <!-- 인앱 알림 토스트 -->
+  <Teleport to="body">
+    <NotificationToast
+      v-for="t in toasts"
+      :key="t.id"
+      :payload="t"
+      @close="toasts = toasts.filter((x) => x.id !== t.id)"
+    />
+  </Teleport>
 </template>

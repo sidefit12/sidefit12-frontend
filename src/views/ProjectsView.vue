@@ -5,11 +5,14 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { fetchProjects, type ProjectListParams } from '@/api/projects'
 import { fetchTopics, fetchRoles, type TopicItem, type RoleItem } from '@/api/reference'
 import type { ProjectCard as ProjectCardType } from '@/api/home'
 import TechStackChip from '@/components/TechStackChip.vue'
 import { type TechStackName } from '@/constants/techStacks'
+
+const route = useRoute()
 
 /* ────── 상태 ────── */
 const loading = ref(true)
@@ -18,8 +21,8 @@ const totalCount = ref(0)
 const hasNext = ref(false)
 const currentPage = ref(0)
 
-// 필터
-const keyword = ref('')
+// 필터 (URL 쿼리에서 keyword 초기값 읽기)
+const keyword = ref((route.query.keyword as string) || '')
 const selectedTopics = ref<string[]>([])
 const selectedRoles = ref<string[]>([])
 const selectedWorkType = ref<string | undefined>(undefined)
