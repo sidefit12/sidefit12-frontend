@@ -11,11 +11,13 @@ import { addBookmark, removeBookmark } from '@/api/bookmark'
 import { useAuthStore } from '@/stores/useAuthStore'
 import TechStackChip from '@/components/TechStackChip.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
+import ReportModal from '@/components/ReportModal.vue'
 import { type TechStackName } from '@/constants/techStacks'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const reportModalOpen = ref(false)
 
 const loading = ref(true)
 const error = ref('')
@@ -356,6 +358,7 @@ async function toggleBookmark() {
             <button
               v-if="!isOwner"
               class="mt-4 flex h-[46px] w-full items-center justify-center rounded-full border border-border bg-white text-sm font-bold text-text transition-all duration-200 hover:scale-105 hover:border-text active:scale-95"
+              @click="reportModalOpen = true"
             >
               게시글 신고
             </button>
@@ -373,5 +376,13 @@ async function toggleBookmark() {
         </aside>
       </div>
     </template>
+
+    <!-- 신고 모달 -->
+    <ReportModal
+      v-if="reportModalOpen"
+      target-type="PROJECT"
+      :target-id="projectId"
+      @close="reportModalOpen = false"
+    />
   </div>
 </template>

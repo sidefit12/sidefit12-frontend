@@ -11,6 +11,7 @@ import type { PublicProfileData } from '@/api/profile'
 import TechStackChip from '@/components/TechStackChip.vue'
 import DefaultAvatar from '@/components/DefaultAvatar.vue'
 import PdfViewer from '@/components/PdfViewer.vue'
+import ReportModal from '@/components/ReportModal.vue'
 
 const route = useRoute()
 const userId = Number(route.params.id)
@@ -32,6 +33,7 @@ function proficiencyLabel(level: string): string {
 
 /* ────── 파일 미리보기 ────── */
 const filePreviewOpen = ref(false)
+const reportModalOpen = ref(false)
 
 function openFilePreview() {
   filePreviewOpen.value = true
@@ -102,10 +104,15 @@ onMounted(async () => {
               {{ profile.introduction }}
             </p>
           </div>
+          <!-- 사용자 신고 버튼 -->
+          <button
+            class="ml-auto self-start rounded-full border border-text bg-white px-4 py-2 text-xs font-bold text-text transition-opacity hover:opacity-70"
+            @click="reportModalOpen = true"
+          >
+            신고
+          </button>
         </div>
       </div>
-
-      <!-- 좌측 + 우측 -->
       <div class="mt-6 flex gap-6">
         <!-- 좌측: 토픽 + 기술 + 역할 -->
         <div class="flex-1 rounded-xl border border-border bg-white px-6 py-8">
@@ -251,5 +258,13 @@ onMounted(async () => {
         </div>
       </transition>
     </Teleport>
+
+    <!-- 사용자 신고 모달 -->
+    <ReportModal
+      v-if="reportModalOpen"
+      target-type="USER"
+      :target-id="userId"
+      @close="reportModalOpen = false"
+    />
   </div>
 </template>

@@ -91,7 +91,7 @@ onMounted(async () => {
           프로젝트 찾기
         </router-link>
         <router-link
-          to="/recommend"
+          to="/recommendations"
           class="whitespace-nowrap text-sm text-text-secondary hover:text-text"
           active-class="!font-bold !text-text"
         >
