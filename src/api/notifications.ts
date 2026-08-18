@@ -105,3 +105,37 @@ export async function deletePushDevice(registrationToken: string) {
   })
   return data
 }
+
+/* ────── 알림 설정 조회 ────── */
+
+export interface NotificationPreferences {
+  applicationEnabled: boolean
+  recruitmentDeadlineEnabled: boolean
+  teamEnabled: boolean
+  systemEnabled: boolean
+  updatedAt: string
+}
+
+export async function fetchNotificationPreferences(): Promise<{
+  success: boolean
+  data: NotificationPreferences
+}> {
+  const { data } = await apiClient.get('/api/v1/users/me/notification-preferences')
+  return data
+}
+
+/* ────── 알림 설정 수정 ────── */
+
+export interface NotificationPreferencesUpdate {
+  applicationEnabled?: boolean
+  recruitmentDeadlineEnabled?: boolean
+  teamEnabled?: boolean
+  systemEnabled?: boolean
+}
+
+export async function updateNotificationPreferences(
+  payload: NotificationPreferencesUpdate,
+): Promise<{ success: boolean; data: NotificationPreferences }> {
+  const { data } = await apiClient.patch('/api/v1/users/me/notification-preferences', payload)
+  return data
+}

@@ -7,6 +7,8 @@ import {
   fetchUnreadCount,
   markAsRead,
   markAllAsRead,
+  fetchNotificationPreferences,
+  updateNotificationPreferences,
 } from '@/api/notifications'
 import apiClient from '@/api/client'
 
@@ -64,5 +66,36 @@ describe('notifications API', () => {
     await markAllAsRead()
 
     expect(apiClient.patch).toHaveBeenCalledWith('/api/v1/notifications/read-all', {})
+  })
+
+  it('fetchNotificationPreferences: GET /api/v1/users/me/notification-preferences 호출', async () => {
+    const mockRes = {
+      data: {
+        success: true,
+        data: {
+          applicationEnabled: true,
+          recruitmentDeadlineEnabled: true,
+          teamEnabled: false,
+          systemEnabled: true,
+          updatedAt: '2026-08-02',
+        },
+      },
+    }
+    vi.mocked(apiClient.get).mockResolvedValue(mockRes)
+
+    const result = await fetchNotificationPreferences()
+
+    expect(apiClient.get).toHaveBeenCalledWith('/api/v1/users/me/notification-preferences')
+    expect(result.data.teamEnabled).toBe(false)
+  })
+
+  it('updateNotificationPreferences: PATCH /api/v1/users/me/notification-preferences 호출', async () => {
+    vi.mocked(apiClient.patch).mockResolvedValue({ data: { success: true, data: {} } })
+
+    await updateNotificationPreferences({ teamEnabled: true })
+
+    expect(apiClient.patch).toHaveBeenCalledWith('/api/v1/users/me/notification-preferences', {
+      teamEnabled: true,
+    })
   })
 })

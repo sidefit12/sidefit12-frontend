@@ -156,10 +156,17 @@ onMounted(async () => {
           <transition name="dropdown">
             <div
               v-if="menuOpen"
-              class="absolute right-0 top-[56px] z-50 w-[180px] rounded-xl border border-border bg-white py-2 shadow-lg"
+              class="absolute right-0 top-[52px] z-50 w-[160px] overflow-hidden rounded-lg border border-border bg-white shadow-lg"
             >
+              <router-link
+                to="/settings"
+                class="flex w-full items-center px-4 py-3 text-sm text-text hover:bg-bg-muted"
+                @click="closeMenu"
+              >
+                설정
+              </router-link>
               <button
-                class="flex w-full items-center px-5 py-3 text-sm text-text hover:bg-bg-muted"
+                class="flex w-full items-center border-t border-border px-4 py-3 text-sm text-text hover:bg-bg-muted"
                 @click="handleLogout"
               >
                 로그아웃
@@ -174,7 +181,7 @@ onMounted(async () => {
       <template v-else>
         <router-link
           to="/login"
-          class="ml-5 whitespace-nowrap text-sm text-text-secondary hover:text-text"
+          class="ml-auto whitespace-nowrap text-sm text-text-secondary hover:text-text"
         >
           로그인
         </router-link>

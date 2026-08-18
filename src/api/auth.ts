@@ -102,3 +102,20 @@ export async function requestPasswordReset(payload: PasswordResetRequestPayload)
 export async function confirmPasswordReset(payload: PasswordResetConfirmPayload): Promise<void> {
   await apiClient.post('/api/v1/auth/password-reset/confirm', payload)
 }
+
+/* ────────────────────────────────────────────
+ * 회원 탈퇴
+ * ──────────────────────────────────────────── */
+
+export interface WithdrawRequest {
+  confirmation: 'WITHDRAW'
+  password: string
+}
+
+/**
+ * 회원 탈퇴
+ * DELETE /api/v1/users/me → 204
+ */
+export async function withdraw(payload: WithdrawRequest): Promise<void> {
+  await apiClient.delete('/api/v1/users/me', { data: payload })
+}

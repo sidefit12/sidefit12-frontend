@@ -120,6 +120,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/NotificationsView.vue'),
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/views/SettingsView.vue'),
+  },
+  {
     path: '/users/:id',
     name: 'PublicProfile',
     component: () => import('@/views/PublicProfileView.vue'),

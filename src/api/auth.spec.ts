@@ -10,6 +10,7 @@ import {
   fetchCurrentUser,
   requestPasswordReset,
   confirmPasswordReset,
+  withdraw,
 } from '@/api/auth'
 import apiClient from '@/api/client'
 
@@ -17,6 +18,7 @@ vi.mock('@/api/client', () => ({
   default: {
     post: vi.fn(),
     get: vi.fn(),
+    delete: vi.fn(),
   },
 }))
 
@@ -103,6 +105,18 @@ describe('auth API', () => {
         newPassword: 'NewPass123!',
         newPasswordConfirm: 'NewPass123!',
         resetToken: 'prt_abc',
+      })
+    })
+  })
+
+  describe('withdraw', () => {
+    it('DELETE /api/v1/users/me 호출', async () => {
+      vi.mocked(apiClient.delete).mockResolvedValue({ data: {} })
+
+      await withdraw({ confirmation: 'WITHDRAW', password: 'P@ssw0rd!' })
+
+      expect(apiClient.delete).toHaveBeenCalledWith('/api/v1/users/me', {
+        data: { confirmation: 'WITHDRAW', password: 'P@ssw0rd!' },
       })
     })
   })
