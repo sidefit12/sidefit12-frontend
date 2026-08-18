@@ -115,6 +115,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/PasswordResetConfirmView.vue'),
   },
   {
+    path: '/notifications',
+    name: 'Notifications',
+    component: () => import('@/views/NotificationsView.vue'),
+  },
+  {
     path: '/users/:id',
     name: 'PublicProfile',
     component: () => import('@/views/PublicProfileView.vue'),
